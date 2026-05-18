@@ -315,7 +315,7 @@
     </div>
     <button class="btn btn-primary" onclick="startExam()">🚀 开始考试</button>
     <button class="btn btn-secondary" onclick="showWrongBook()" id="btn-wrong-book">📖 错题本 (8)</button>
-    <button class="btn btn-secondary" onclick="showExamRecords()" id="btn-records" style="margin-top:8px">📊 考试记录</button>
+    <button class="btn btn-secondary" onclick="promptExamRecords()" id="btn-records" style="margin-top:8px">🔐 管理面板</button>
   </div>
 
   <!-- 考试页 -->
@@ -6170,26 +6170,52 @@ function saveExamRecord() {
   } catch(e) {}
 }
 
+function promptExamRecords() {
+  const pwd = prompt('请输入管理密码查看考试记录：');
+  if (pwd === null) return;
+  if (pwd !== 'xiaosu888') {
+    alert('密码错误！');
+    return;
+  }
+  showExamRecords();
+}
+
 function showExamRecords() {
   document.getElementById('page-home').classList.add('hide');
   document.getElementById('page-records').classList.remove('hide');
   const container = document.getElementById('records-list');
-  container.innerHTML = '';
+  container.innerHTML = '<div style="text-align:center;color:#999;padding:20px 0">加载中...</div>';
   try {
     const records = JSON.parse(localStorage.getItem('exam_records') || '[]');
     if (records.length === 0) {
       container.innerHTML = '<div style="text-align:center;color:#999;padding:40px 0;font-size:15px">📭 暂无考试记录</div>';
       return;
     }
-    records.slice().reverse().forEach((r, i) => {
+    // Summary stats
+    const total = records.length;
+    const avgScore = Math.round(records.reduce((s, r) => s + r.score, 0) / total);
+    const totalCorrect = records.reduce((s, r) => s + r.correct, 0);
+    const totalWrong = records.reduce((s, r) => s + r.wrong, 0);
+    
+    container.innerHTML = '<div style="margin-bottom:16px;padding:14px;background:#eef2ff;border-radius:10px">' +
+      '<div style="font-size:13px;color:#666;margin-bottom:6px">📊 总览</div>' +
+      '<div style="display:flex;gap:16px;flex-wrap:wrap">' +
+      '<span>考试次数: <b>' + total + '</b></span>' +
+      '<span>平均分: <b style="color:#4f6ef7">' + avgScore + '</b></span>' +
+      '<span>总正确: <b style="color:#22c55e">' + totalCorrect + '</b></span>' +
+      '<span>总错误: <b style="color:#ef4444">' + totalWrong + '</b></span>' +
+      '</div></div><div style="font-size:13px;color:#666;margin-bottom:8px">📋 详细记录</div>';
+    
+    records.slice().reverse().forEach((r) => {
       const div = document.createElement('div');
-      div.style.cssText = 'padding:14px;margin-bottom:10px;border-radius:8px;border:1px solid #e5e7eb';
+      div.style.cssText = 'padding:14px;margin-bottom:10px;border-radius:8px;border:1px solid #e5e7eb;background:#fafafa';
       const color = r.score >= 80 ? '#22c55e' : r.score >= 60 ? '#f59e0b' : '#ef4444';
-      div.innerHTML = '<div style="font-weight:600;margin-bottom:4px">' + r.name + ' (' + r.id + ')</div>' +
+      div.innerHTML = '<div style="font-weight:600;margin-bottom:4px;font-size:15px">' +
+        '👤 ' + r.name + ' (' + r.id + ')</div>' +
         '<div style="font-size:13px;color:#666">' +
-        '得分: <span style="color:' + color + ';font-weight:700">' + r.score + '</span> 分 | ' +
+        '得分: <span style="color:' + color + ';font-weight:700;font-size:18px">' + r.score + '</span> 分 | ' +
         '✅' + r.correct + ' ❌' + r.wrong + ' ⏭️' + r.empty + ' | ' + r.total + '题 | ' +
-        r.time + '</div>';
+        '🕐 ' + r.time + '</div>';
       container.appendChild(div);
     });
   } catch(e) {
