@@ -252,6 +252,16 @@
       <p>在线考试系统 · 416 道题 · 随机抽题 · 自动判分 · 错题回顾 · 分享即用</p>
     </div>
     <div class="card">
+      <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:8px;border-bottom:1px solid #eee;padding-bottom:16px">
+        <div>
+          <div class="setting-label">👤 考生信息</div>
+          <div class="setting-desc">请输入姓名和学号</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="student-name" placeholder="姓名" style="flex:1;padding:8px 12px;border:1px solid #d9d9d9;border-radius:6px;font-size:14px">
+          <input type="text" id="student-id" placeholder="学号" style="flex:1;padding:8px 12px;border:1px solid #d9d9d9;border-radius:6px;font-size:14px">
+        </div>
+      </div>
       <div class="setting-row">
         <div>
           <div class="setting-label">📋 抽取题数</div>
@@ -265,6 +275,12 @@
             <option value="20">20</option>
             <option value="30">30</option>
             <option value="50">50</option>
+            <option value="80">80</option>
+            <option value="100">100</option>
+            <option value="150">150</option>
+            <option value="200">200</option>
+            <option value="300">300</option>
+            <option value="416">全部(416)</option>
           </select>
         </div>
       </div>
@@ -275,13 +291,12 @@
         </div>
         <div class="setting-control">
           <select id="exam-time-per-q">
-            <option value="0">不限时</option>
-            <option value="15">15秒</option>
             <option value="30">30秒</option>
-            <option value="45">45秒</option>
             <option value="60" selected="">60秒</option>
-            <option value="90">90秒</option>
             <option value="120">120秒</option>
+            <option value="300">5分钟</option>
+            <option value="600">10分钟</option>
+            <option value="1200">20分钟</option>
           </select>
         </div>
       </div>
@@ -300,11 +315,14 @@
     </div>
     <button class="btn btn-primary" onclick="startExam()">🚀 开始考试</button>
     <button class="btn btn-secondary" onclick="showWrongBook()" id="btn-wrong-book">📖 错题本 (8)</button>
+    <button class="btn btn-secondary" onclick="showExamRecords()" id="btn-records" style="margin-top:8px">📊 考试记录</button>
   </div>
 
   <!-- 考试页 -->
   <div id="page-exam" class="hide">
-    <div class="exam-header">
+    <div class="exam-header" style="flex-wrap:wrap;gap:4px">
+      <span style="font-size:16px;font-weight:600;color:#4f6ef7" id="student-badge"></span>
+      <span style="flex:1"></span>
       <span id="q-progress">第 1/10 题</span>
       <span class="timer" id="timer">01:00</span>
     </div>
@@ -331,6 +349,7 @@
         <div class="big" id="result-score">0</div>
         <div class="label">分</div>
       </div>
+      <div style="text-align:center;font-size:14px;color:#666;margin-top:-10px;margin-bottom:10px" id="result-student-info"></div>
       <div class="result-stats">
         <div class="stat"><div class="num correct" id="r-correct">0</div><div class="lbl">✅ 正确</div></div>
         <div class="stat"><div class="num wrong" id="r-wrong">0</div><div class="lbl">❌ 错误</div></div>
@@ -346,6 +365,13 @@
   <div id="page-wrongbook" class="hide">
     <div class="header"><h1>📖 错题本</h1></div>
     <div class="card" id="wrong-list"></div>
+    <button class="btn btn-secondary" onclick="showHome()">🏠 返回首页</button>
+  </div>
+
+  <!-- 考试记录页 -->
+  <div id="page-records" class="hide">
+    <div class="header"><h1>📊 考试记录</h1></div>
+    <div class="card" id="records-list"></div>
     <button class="btn btn-secondary" onclick="showHome()">🏠 返回首页</button>
   </div>
 </div>
@@ -5710,6 +5736,8 @@ let state = {
   correctCount: 0,
   wrongCount: 0,
   emptyCount: 0,
+  studentName: '',
+  studentId: '',
   timerId: null,
   timePerQ: 0,
   timeLeft: 0,
@@ -5751,6 +5779,7 @@ function showHome() {
   document.getElementById('page-exam').classList.add('hide');
   document.getElementById('page-result').classList.add('hide');
   document.getElementById('page-wrongbook').classList.add('hide');
+  document.getElementById('page-records').classList.add('hide');
   clearTimer();
   updateWrongBtn();
 }
@@ -6035,6 +6064,7 @@ function updateTimerDisplay() {
 // 结果页
 // ============================================================
 function showResult() {
+  saveExamRecord();
   clearTimer();
   document.getElementById('page-exam').classList.add('hide');
   document.getElementById('page-result').classList.remove('hide');
@@ -6046,6 +6076,7 @@ function showResult() {
   const score = total > 0 ? Math.round((correct / total) * 100) : 0;
 
   document.getElementById('result-score').textContent = score;
+  document.getElementById('result-student-info').textContent = state.studentName + ' - ' + state.studentId;
   document.getElementById('r-correct').textContent = correct;
   document.getElementById('r-wrong').textContent = wrong;
   document.getElementById('r-empty').textContent = empty;
@@ -6120,6 +6151,50 @@ function showWrongBook() {
     ">🗑️ 清空错题本</button>
   `;
   updateWrongBtn();
+}
+
+function saveExamRecord() {
+  try {
+    const records = JSON.parse(localStorage.getItem('exam_records') || '[]');
+    records.push({
+      name: state.studentName,
+      id: state.studentId,
+      score: Math.round(state.correctCount / state.questions.length * 100),
+      correct: state.correctCount,
+      wrong: state.wrongCount,
+      empty: state.emptyCount,
+      total: state.questions.length,
+      time: new Date().toLocaleString('zh-CN')
+    });
+    localStorage.setItem('exam_records', JSON.stringify(records.slice(-50)));
+  } catch(e) {}
+}
+
+function showExamRecords() {
+  document.getElementById('page-home').classList.add('hide');
+  document.getElementById('page-records').classList.remove('hide');
+  const container = document.getElementById('records-list');
+  container.innerHTML = '';
+  try {
+    const records = JSON.parse(localStorage.getItem('exam_records') || '[]');
+    if (records.length === 0) {
+      container.innerHTML = '<div style="text-align:center;color:#999;padding:40px 0;font-size:15px">📭 暂无考试记录</div>';
+      return;
+    }
+    records.slice().reverse().forEach((r, i) => {
+      const div = document.createElement('div');
+      div.style.cssText = 'padding:14px;margin-bottom:10px;border-radius:8px;border:1px solid #e5e7eb';
+      const color = r.score >= 80 ? '#22c55e' : r.score >= 60 ? '#f59e0b' : '#ef4444';
+      div.innerHTML = '<div style="font-weight:600;margin-bottom:4px">' + r.name + ' (' + r.id + ')</div>' +
+        '<div style="font-size:13px;color:#666">' +
+        '得分: <span style="color:' + color + ';font-weight:700">' + r.score + '</span> 分 | ' +
+        '✅' + r.correct + ' ❌' + r.wrong + ' ⏭️' + r.empty + ' | ' + r.total + '题 | ' +
+        r.time + '</div>';
+      container.appendChild(div);
+    });
+  } catch(e) {
+    container.innerHTML = '<div style="text-align:center;color:#999;padding:40px 0;font-size:15px">加载失败</div>';
+  }
 }
 
 function retryWrong() {
