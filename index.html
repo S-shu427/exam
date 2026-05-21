@@ -3,6 +3,11 @@
 <html lang="zh-CN"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="小苏题库">
+<link rel="manifest" href="site.webmanifest">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='80'%3E📝%3C/text%3E%3C/svg%3E">
 <title>小苏题库 - 在线考试</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -16,8 +21,10 @@
 
   /* 首页 */
   .header { text-align: center; padding: 30px 0 20px; }
-  .header h1 { font-size: 24px; color: #1a1a2e; cursor: default; }
+  .header h1 { font-size: 24px; color: #1a1a2e; cursor: default; -webkit-user-select: none; user-select: none; }
   .header h1 .tap-hint { font-size: 11px; color: #ccc; font-weight: 400; }
+  .header h1:active .tap-hint:not(.unlocked) { color: #4f6ef7; transition: color 0.1s; }
+  .header h1.pressing .tap-hint { color: #4f6ef7 !important; }
 
   /* 训练模式 */
   .trainer-entrance { margin-top: 10px; }
@@ -356,8 +363,8 @@
   <!-- 首页 -->
   <div id="page-home">
     <div class="header">
-      <h1 onclick="onTitleTap()">📝 小苏题库 <span class="tap-hint">· 小苏专属</span></h1>
-      <p>在线考试系统 · 416 道题 · 随机抽题 · 自动判分 · 错题回顾 · 分享即用</p>
+      <h1 id="trainer-title">📝 小苏题库 <span class="tap-hint" id="tap-hint-text">· 小苏专属</span></h1>
+      <p id="subtitle">在线考试系统 · 416 道题 · 随机抽题 · 自动判分 · 错题回顾 · 分享即用</p>
     </div>
     <div class="card">
       <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:8px;border-bottom:1px solid #eee;padding-bottom:16px">
@@ -517,7 +524,7 @@
     <div class="progress-bar">
       <div class="fill" id="te-progress-fill" style="width:0%"></div>
     </div>
-    <div style="font-size:12px;color:#999;margin-bottom:4px;text-align:right" id="te-mastery-hint"></div>
+    <div style="font-size:12px;color:#999;margin-bottom:4px;text-align:right" id="te-mastery-hint">加载中...</div>
     <div class="card">
       <div class="question-number" id="te-q-number">第 1 题</div>
       <div class="question-text" id="te-q-text"></div>
@@ -4479,26 +4486,61 @@ function getBatches(batchSize) {
 }
 
 // --- 标题三连击解锁 ---
-function onTitleTap() {
+// --- 标题长按解锁（兼容桌面+手机） ---
+let _titleHoldTimer = null;
+
+function doTitleUnlock() {
   if (getTrainerUnlocked()) {
     showTrainerHome();
     return;
   }
-  _trainerTapCount++;
-  if (_trainerTapTimer) clearTimeout(_trainerTapTimer);
-  _trainerTapTimer = setTimeout(() => { _trainerTapCount = 0; }, 1000);
-  if (_trainerTapCount >= 3) {
-    _trainerTapCount = 0;
-    const pwd = prompt('🔐 训练模式暗号：');
-    if (pwd === '小苏最棒') {
-      setTrainerUnlocked(true);
-      document.getElementById('btn-trainer-entrance').classList.remove('hide');
-      showTrainerHome();
-    } else if (pwd !== null) {
-      alert('❌ 暗号不对哦~');
-    }
+  const pwd = prompt('🔐 训练模式暗号：');
+  if (pwd === '小苏最棒') {
+    setTrainerUnlocked(true);
+    document.getElementById('btn-trainer-entrance').classList.remove('hide');
+    document.getElementById('tap-hint-text').textContent = '· ✓ 已解锁';
+    document.getElementById('tap-hint-text').style.color = '#22c55e';
+    showTrainerHome();
+  } else if (pwd !== null) {
+    alert('❌ 暗号不对哦~');
   }
 }
+
+// 手机端：touchstart / touchend 判断长按
+document.addEventListener('DOMContentLoaded', function() {
+  const title = document.getElementById('trainer-title');
+  if (!title) return;
+  let holdTimer = null;
+  
+  title.addEventListener('touchstart', function() {
+    holdTimer = setTimeout(doTitleUnlock, 600);
+  }, { passive: true });
+  
+  title.addEventListener('touchend', function() {
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+  }, { passive: true });
+  
+  title.addEventListener('touchmove', function() {
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+  }, { passive: true });
+  
+  // 桌面端：mousedown 600ms 长按
+  title.addEventListener('mousedown', function() {
+    holdTimer = setTimeout(doTitleUnlock, 600);
+  });
+  title.addEventListener('mouseup', function() {
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+  });
+  title.addEventListener('mouseleave', function() {
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+  });
+
+  // 如果已解锁，更新提示文字
+  if (getTrainerUnlocked()) {
+    document.getElementById('tap-hint-text').textContent = '· ✓ 已解锁';
+    document.getElementById('tap-hint-text').style.color = '#22c55e';
+  }
+});
 
 // --- 训练模式首页 ---
 let trainerState = null; // { batchQuestions, currentQ, batchIdx, batchSize, answers, confirmed, correct, wrong }
