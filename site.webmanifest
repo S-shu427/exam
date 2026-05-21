@@ -1,11 +1,14 @@
 {
-  "name": "小苏题库",
+  "name": "小苏题库 - 汽车网联在线考试",
   "short_name": "小苏题库",
-  "description": "汽车网联在线考试系统",
+  "description": "416道汽车网联专业题目 · 在线考试 · 错题本 · 学习统计 · PWA支持 · 涵盖车联网协议、V2X、智能驾驶、网络安全等核心领域",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#f0f2f5",
   "theme_color": "#4f6ef7",
+  "orientation": "any",
+  "categories": ["education", "productivity", "automotive"],
+  "lang": "zh-CN",
   "icons": [
     {
       "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%234f6ef7'/%3E%3Ctext x='96' y='128' text-anchor='middle' font-size='100'%3E📝%3C/text%3E%3C/svg%3E",
