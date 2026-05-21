@@ -21,7 +21,7 @@
 
   /* 首页 */
   .header { text-align: center; padding: 30px 0 20px; }
-  .header h1 { font-size: 24px; color: #1a1a2e; cursor: default; -webkit-user-select: none; user-select: none; }
+  .header h1 { font-size: 24px; color: #1a1a2e; cursor: default; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; }
   .header h1 .tap-hint { font-size: 11px; color: #ccc; font-weight: 400; }
   .header h1:active .tap-hint:not(.unlocked) { color: #4f6ef7; transition: color 0.1s; }
   .header h1.pressing .tap-hint { color: #4f6ef7 !important; }
@@ -4422,9 +4422,6 @@ function retryWrong() {
 // ============================================================
 
 // --- 解锁状态 ---
-let _trainerTapCount = 0;
-let _trainerTapTimer = null;
-
 function getTrainerUnlocked() {
   return localStorage.getItem('trainer_unlocked') === 'true';
 }
@@ -4513,25 +4510,31 @@ document.addEventListener('DOMContentLoaded', function() {
   let holdTimer = null;
   
   title.addEventListener('touchstart', function() {
+    title.classList.add('pressing');
     holdTimer = setTimeout(doTitleUnlock, 600);
   }, { passive: true });
   
   title.addEventListener('touchend', function() {
+    title.classList.remove('pressing');
     if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
   }, { passive: true });
   
-  title.addEventListener('touchmove', function() {
+  title.addEventListener('touchcancel', function() {
+    title.classList.remove('pressing');
     if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
   }, { passive: true });
   
   // 桌面端：mousedown 600ms 长按
   title.addEventListener('mousedown', function() {
+    title.classList.add('pressing');
     holdTimer = setTimeout(doTitleUnlock, 600);
   });
   title.addEventListener('mouseup', function() {
+    title.classList.remove('pressing');
     if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
   });
   title.addEventListener('mouseleave', function() {
+    title.classList.remove('pressing');
     if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
   });
 
@@ -4547,7 +4550,7 @@ let trainerState = null; // { batchQuestions, currentQ, batchIdx, batchSize, ans
 
 function showTrainerHome() {
   if (!getTrainerUnlocked()) {
-    onTitleTap();
+    doTitleUnlock();
     return;
   }
   hideAllPages();
