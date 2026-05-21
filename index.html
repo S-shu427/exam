@@ -16,7 +16,115 @@
 
   /* 首页 */
   .header { text-align: center; padding: 30px 0 20px; }
-  .header h1 { font-size: 24px; color: #1a1a2e; }
+  .header h1 { font-size: 24px; color: #1a1a2e; cursor: default; }
+  .header h1 .tap-hint { font-size: 11px; color: #ccc; font-weight: 400; }
+
+  /* 训练模式 */
+  .trainer-entrance { margin-top: 10px; }
+  .trainer-header {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    color: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .trainer-header h2 { font-size: 20px; margin-bottom: 4px; }
+  .trainer-header p { font-size: 13px; opacity: 0.7; }
+  .trainer-progress-overview {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .trainer-progress-overview .tp-card {
+    flex: 1;
+    min-width: 100px;
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .trainer-progress-overview .tp-card .num {
+    font-size: 28px;
+    font-weight: 800;
+    color: #4f6ef7;
+  }
+  .trainer-progress-overview .tp-card .lbl {
+    font-size: 12px;
+    color: #999;
+    margin-top: 2px;
+  }
+  .batch-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .batch-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    border-left: 4px solid #4f6ef7;
+  }
+  .batch-row.completed { border-left-color: #22c55e; opacity: 0.7; }
+  .batch-row.in-progress { border-left-color: #f59e0b; }
+  .batch-row.pending { border-left-color: #d1d5db; }
+  .batch-row .b-label {
+    width: 80px;
+    flex-shrink: 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .batch-row .b-status {
+    flex: 1;
+    font-size: 13px;
+    color: #666;
+  }
+  .batch-row .b-action {
+    flex-shrink: 0;
+  }
+  .batch-row .b-action .btn {
+    padding: 8px 14px;
+    font-size: 13px;
+    width: auto;
+    display: inline-block;
+    margin: 0;
+  }
+  .batch-mastery-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: #e5e7eb;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+  .batch-mastery-bar .fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #22c55e, #4f6ef7);
+    transition: width 0.3s;
+  }
+  .trainer-badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+  .trainer-badge.goal { background: #fef3c7; color: #d97706; }
+  .trainer-badge.done { background: #d1fae5; color: #059669; }
+
+  /* 训练模式入口按钮 */
+  .btn-trainer {
+    background: linear-gradient(135deg, #1a1a2e, #4f6ef7);
+    color: #fff;
+    margin-top: 8px;
+  }
+  .btn-trainer:active { opacity: 0.9; }
   .header p { font-size: 14px; color: #666; margin-top: 6px; }
   .card {
     background: #fff;
@@ -248,7 +356,7 @@
   <!-- 首页 -->
   <div id="page-home">
     <div class="header">
-      <h1>📝 小苏题库</h1>
+      <h1 onclick="onTitleTap()">📝 小苏题库 <span class="tap-hint">· 小苏专属</span></h1>
       <p>在线考试系统 · 416 道题 · 随机抽题 · 自动判分 · 错题回顾 · 分享即用</p>
     </div>
     <div class="card">
@@ -316,6 +424,7 @@
     <button class="btn btn-primary" onclick="startExam()">🚀 开始考试</button>
     <button class="btn btn-secondary" onclick="showWrongBook()" id="btn-wrong-book">📖 错题本 (8)</button>
     <button class="btn btn-secondary" onclick="promptExamRecords()" id="btn-records" style="margin-top:8px">🔐 管理面板</button>
+  <button class="btn btn-trainer hide" id="btn-trainer-entrance" onclick="showTrainerHome()">🎯 训练模式</button>
   </div>
 
   <!-- 考试页 -->
@@ -373,6 +482,59 @@
     <div class="header"><h1>📊 考试记录</h1></div>
     <div class="card" id="records-list"></div>
     <button class="btn btn-secondary" onclick="showHome()">🏠 返回首页</button>
+  </div>
+
+  <!-- 训练模式首页 -->
+  <div id="page-trainer" class="hide">
+    <div class="trainer-header">
+      <h2>🎯 小苏特训</h2>
+      <p>按顺序刷题 · 分批攻克 · 一周通关</p>
+    </div>
+    <div class="trainer-progress-overview" id="trainer-overview-cards"></div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:15px;font-weight:600">📋 批次进度</div>
+        <div style="font-size:13px;color:#666">
+          分批模式：
+          <select id="trainer-batch-size" onchange="rebuildTrainerBatches()" style="padding:4px 8px;border:1px solid #d9d9d9;border-radius:6px;font-size:13px">
+            <option value="50">50题/批</option>
+            <option value="100">100题/批</option>
+          </select>
+        </div>
+      </div>
+      <div id="trainer-batch-list"></div>
+    </div>
+    <button class="btn btn-secondary" onclick="showHome()">🏠 返回首页</button>
+  </div>
+
+  <!-- 训练模式刷题页（复用考试样式） -->
+  <div id="page-trainer-exam" class="hide">
+    <div class="exam-header" style="flex-wrap:wrap;gap:4px">
+      <span style="font-size:14px;font-weight:600;color:#4f6ef7">🎯 训练 <span id="te-batch-label">第1批</span></span>
+      <span style="flex:1"></span>
+      <span id="te-progress">第 1/50 题</span>
+    </div>
+    <div class="progress-bar">
+      <div class="fill" id="te-progress-fill" style="width:0%"></div>
+    </div>
+    <div style="font-size:12px;color:#999;margin-bottom:4px;text-align:right" id="te-mastery-hint"></div>
+    <div class="card">
+      <div class="question-number" id="te-q-number">第 1 题</div>
+      <div class="question-text" id="te-q-text"></div>
+      <ul class="options" id="te-q-options"></ul>
+      <div id="te-q-feedback" class="hide" style="margin-top:12px;padding:12px;border-radius:8px;font-size:14px;line-height:1.5"></div>
+      <div class="nav-buttons">
+        <button class="btn btn-primary" id="te-btn-confirm" onclick="trainerConfirm()">✅ 确认</button>
+        <button class="btn btn-secondary hide" id="te-btn-next" onclick="trainerNext()">下一题 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 训练模式批次结果 -->
+  <div id="page-trainer-result" class="hide">
+    <div class="header"><h1>📊 批次完成</h1></div>
+    <div class="card" id="te-result-content"></div>
+    <button class="btn btn-secondary" onclick="showTrainerHome()">🏠 返回训练首页</button>
   </div>
 </div>
 
@@ -4248,8 +4410,540 @@ function retryWrong() {
   renderQuestion(0);
 }
 
+// ============================================================
+// 🎯 训练模式 (隐藏入口)
+// ============================================================
+
+// --- 解锁状态 ---
+let _trainerTapCount = 0;
+let _trainerTapTimer = null;
+
+function getTrainerUnlocked() {
+  return localStorage.getItem('trainer_unlocked') === 'true';
+}
+function setTrainerUnlocked(v) {
+  localStorage.setItem('trainer_unlocked', v ? 'true' : 'false');
+}
+
+// --- 掌握度数据 ---
+function getMasteryData() {
+  try { return JSON.parse(localStorage.getItem('trainer_mastery') || '{}'); }
+  catch { return {}; }
+}
+function saveMasteryData(data) {
+  localStorage.setItem('trainer_mastery', JSON.stringify(data));
+}
+function recordAttempt(qId, isCorrect) {
+  const data = getMasteryData();
+  if (!data[qId]) data[qId] = { attempts: 0, correct: 0, wrong: 0, lastWrong: 0 };
+  data[qId].attempts++;
+  if (isCorrect) data[qId].correct++;
+  else { data[qId].wrong++; data[qId].lastWrong = Date.now(); }
+  saveMasteryData(data);
+}
+
+// --- 批次进度 ---
+function getBatchProgress() {
+  try { return JSON.parse(localStorage.getItem('trainer_batch_progress') || '{}'); }
+  catch { return {}; }
+}
+function saveBatchProgress(p) {
+  localStorage.setItem('trainer_batch_progress', JSON.stringify(p));
+}
+function markBatchComplete(batchIdx, batchSize, correct, wrong) {
+  const p = getBatchProgress();
+  p[`batch_${batchSize}_${batchIdx}`] = { correct, wrong, total: batchSize, done: true, ts: Date.now() };
+  saveBatchProgress(p);
+}
+function isBatchComplete(batchIdx, batchSize) {
+  const p = getBatchProgress();
+  return !!p[`batch_${batchSize}_${batchIdx}`];
+}
+function getBatchStats(batchIdx, batchSize) {
+  const p = getBatchProgress();
+  return p[`batch_${batchSize}_${batchIdx}`] || null;
+}
+function clearBatchProgress() {
+  localStorage.removeItem('trainer_batch_progress');
+}
+
+// --- 计算批次 ---
+function getBatches(batchSize) {
+  const total = QUESTION_BANK.length;
+  const batches = [];
+  for (let i = 0; i < total; i += batchSize) {
+    const end = Math.min(i + batchSize, total);
+    batches.push(QUESTION_BANK.slice(i, end));
+  }
+  return batches;
+}
+
+// --- 标题三连击解锁 ---
+function onTitleTap() {
+  if (getTrainerUnlocked()) {
+    showTrainerHome();
+    return;
+  }
+  _trainerTapCount++;
+  if (_trainerTapTimer) clearTimeout(_trainerTapTimer);
+  _trainerTapTimer = setTimeout(() => { _trainerTapCount = 0; }, 1000);
+  if (_trainerTapCount >= 3) {
+    _trainerTapCount = 0;
+    const pwd = prompt('🔐 训练模式暗号：');
+    if (pwd === '小苏最棒') {
+      setTrainerUnlocked(true);
+      document.getElementById('btn-trainer-entrance').classList.remove('hide');
+      showTrainerHome();
+    } else if (pwd !== null) {
+      alert('❌ 暗号不对哦~');
+    }
+  }
+}
+
+// --- 训练模式首页 ---
+let trainerState = null; // { batchQuestions, currentQ, batchIdx, batchSize, answers, confirmed, correct, wrong }
+
+function showTrainerHome() {
+  if (!getTrainerUnlocked()) {
+    onTitleTap();
+    return;
+  }
+  hideAllPages();
+  document.getElementById('page-trainer').classList.remove('hide');
+  renderTrainerHome();
+}
+
+function renderTrainerHome() {
+  const mastery = getMasteryData();
+  const totalQ = QUESTION_BANK.length;
+  const masteredCount = Object.values(mastery).filter(m => m.correct >= 2 && m.wrong === 0).length;
+  const attemptedCount = Object.keys(mastery).length;
+  const masteryRate = totalQ > 0 ? Math.round(masteredCount / totalQ * 100) : 0;
+
+  document.getElementById('trainer-overview-cards').innerHTML = `
+    <div class="tp-card">
+      <div class="num">${masteredCount}</div>
+      <div class="lbl">已掌握 / ${totalQ}</div>
+      <div class="batch-mastery-bar"><div class="fill" style="width:${masteryRate}%"></div></div>
+    </div>
+    <div class="tp-card">
+      <div class="num">${Math.round(masteredCount / totalQ * 100)}%</div>
+      <div class="lbl">掌握率</div>
+    </div>
+    <div class="tp-card">
+      <div class="num">${attemptedCount}</div>
+      <div class="lbl">已练习</div>
+    </div>
+  `;
+
+  const batchSize = parseInt(document.getElementById('trainer-batch-size').value);
+  rebuildTrainerBatches();
+}
+
+function rebuildTrainerBatches() {
+  const batchSize = parseInt(document.getElementById('trainer-batch-size').value);
+  const batches = getBatches(batchSize);
+  const list = document.getElementById('trainer-batch-list');
+  list.innerHTML = '';
+
+  batches.forEach((batch, idx) => {
+    const startId = batch[0].id;
+    const endId = batch[batch.length - 1].id;
+    const done = isBatchComplete(idx, batchSize);
+    const stats = getBatchStats(idx, batchSize);
+    const mastery = getMasteryData();
+    const batchMastered = batch.filter(q => {
+      const m = mastery[q.id];
+      return m && m.correct >= 2 && m.wrong === 0;
+    }).length;
+    const batchRate = batch.length > 0 ? Math.round(batchMastered / batch.length * 100) : 0;
+
+    // 判断状态
+    let statusClass = 'pending';
+    let statusText = '⏳ 未开始';
+    let statusDetail = '';
+    if (done) {
+      statusClass = 'completed';
+      const rate = stats ? Math.round(stats.correct / stats.total * 100) : 100;
+      statusText = `✅ 已完成（${rate}分）`;
+      statusDetail = `✓${stats.correct} ✗${stats.wrong}`;
+    }
+
+    const row = document.createElement('div');
+    row.className = `batch-row ${statusClass}`;
+    row.innerHTML = `
+      <div class="b-label">第${idx + 1}批</div>
+      <div class="b-status">
+        <div>第 ${startId}~${endId} 题 <span class="trainer-badge ${done ? 'done' : 'goal'}">${done ? '已掌握 '+batchRate+'%' : '待练习'}</span></div>
+        <div class="batch-mastery-bar"><div class="fill" style="width:${batchRate}%"></div></div>
+        <div style="font-size:12px;color:#999;margin-top:2px">${statusDetail}</div>
+      </div>
+      <div class="b-action">
+        <button class="btn ${done ? 'btn-secondary' : 'btn-primary'}" onclick="startTrainerBatch(${idx}, ${batchSize}, '${done ? 'review' : 'practice'}')">
+          ${done ? '🔄 巩固' : '🚀 开始'}
+        </button>
+      </div>
+    `;
+    list.appendChild(row);
+  });
+}
+
+// --- 开始一批练习 ---
+function startTrainerBatch(batchIdx, batchSize, mode) {
+  const batches = getBatches(batchSize);
+  const batch = batches[batchIdx];
+  if (!batch || batch.length === 0) return;
+
+  let questions;
+  if (mode === 'review') {
+    // 巩固模式：只做该批中未掌握的 + 做过的错题
+    const mastery = getMasteryData();
+    const weak = batch.filter(q => {
+      const m = mastery[q.id];
+      return !m || m.correct < 2 || m.wrong > 0;
+    });
+    if (weak.length === 0) {
+      alert('🎉 该批全部掌握！');
+      return;
+    }
+    questions = weak;
+  } else {
+    questions = [...batch];
+  }
+
+  trainerState = {
+    batchQuestions: questions,
+    allBatchQuestions: batch,
+    currentQ: 0,
+    batchIdx: batchIdx,
+    batchSize: batchSize,
+    mode: mode,
+    answers: {},
+    confirmed: {},
+    correct: 0,
+    wrong: 0
+  };
+
+  hideAllPages();
+  document.getElementById('page-trainer-exam').classList.remove('hide');
+  document.getElementById('te-batch-label').textContent = `第${batchIdx + 1}批 (${mode === 'review' ? '巩固' : '练习'})`;
+  renderTrainerQuestion(0);
+}
+
+// --- 渲染训练题目 ---
+function renderTrainerQuestion(index) {
+  const ts = trainerState;
+  if (!ts) return;
+  const q = ts.batchQuestions[index];
+  if (!q) return;
+
+  const total = ts.batchQuestions.length;
+  document.getElementById('te-q-number').textContent = `第 ${index + 1} 题（原题库第 ${q.id} 题）`;
+  document.getElementById('te-progress').textContent = `第 ${index + 1}/${total} 题`;
+  document.getElementById('te-progress-fill').style.width = `${(index / total) * 100}%`;
+
+  // 掌握度提示
+  const mastery = getMasteryData();
+  const m = mastery[q.id];
+  let hint = '';
+  if (m) {
+    const rate = m.attempts > 0 ? Math.round(m.correct / m.attempts * 100) : 0;
+    hint = `📊 做过${m.attempts}次 · 正确率${rate}%`;
+  } else {
+    hint = '🆕 新题目';
+  }
+  document.getElementById('te-mastery-hint').textContent = hint;
+
+  const tag = q.type === 'single'
+    ? '<span class="q-tag single">单选题</span>'
+    : '<span class="q-tag multi">多选题</span>';
+  document.getElementById('te-q-text').innerHTML = tag + q.q;
+
+  const optsContainer = document.getElementById('te-q-options');
+  optsContainer.innerHTML = '';
+  q.options.forEach((opt, oi) => {
+    const li = document.createElement('li');
+    li.className = 'option-item' + (q.type === 'multi' ? ' multi' : '');
+    li.dataset.index = oi;
+
+    const cb = document.createElement('div');
+    cb.className = 'checkbox';
+    cb.textContent = q.type === 'multi' ? '□' : '○';
+
+    const span = document.createElement('span');
+    span.textContent = opt;
+
+    li.appendChild(cb);
+    li.appendChild(span);
+
+    if (ts.confirmed[index]) {
+      li.style.cursor = 'default';
+      li.onclick = null;
+      const userAns = ts.answers[index] || [];
+      const userArr = Array.isArray(userAns) ? userAns : [userAns];
+      const correctArr = Array.isArray(q.answer) ? q.answer : [q.answer];
+      if (userArr.includes(oi)) {
+        li.classList.add(correctArr.includes(oi) ? 'correct' : 'wrong');
+        cb.textContent = correctArr.includes(oi) ? '✓' : '✗';
+      } else if (correctArr.includes(oi) && q.type === 'multi') {
+        li.classList.add('missed');
+        cb.textContent = '○';
+      }
+    } else {
+      li.onclick = () => trainerSelectOption(index, oi, q.type);
+      const userAns = ts.answers[index];
+      if (userAns !== undefined) {
+        const arr = Array.isArray(userAns) ? userAns : [userAns];
+        if (arr.includes(oi)) {
+          li.classList.add('selected');
+          cb.textContent = q.type === 'multi' ? '■' : '●';
+        }
+      }
+    }
+
+    optsContainer.appendChild(li);
+  });
+
+  // 按钮状态
+  document.getElementById('te-btn-confirm').classList.remove('hide');
+  document.getElementById('te-btn-next').classList.add('hide');
+  if (ts.confirmed[index]) {
+    document.getElementById('te-btn-confirm').classList.add('hide');
+    document.getElementById('te-btn-next').classList.remove('hide');
+    document.getElementById('te-btn-next').textContent = index < total - 1 ? '下一题 →' : '📊 查看结果';
+  } else {
+    const ans = ts.answers[index];
+    document.getElementById('te-btn-confirm').disabled = ans === undefined ||
+      (q.type === 'multi' && Array.isArray(ans) && ans.length === 0);
+  }
+
+  document.getElementById('te-q-feedback').classList.add('hide');
+  document.getElementById('te-q-feedback').innerHTML = '';
+}
+
+function trainerSelectOption(qIdx, optIdx, type) {
+  const ts = trainerState;
+  if (ts.confirmed[qIdx]) return;
+
+  if (type === 'single') {
+    ts.answers[qIdx] = optIdx;
+  } else {
+    const current = ts.answers[qIdx];
+    const arr = Array.isArray(current) ? [...current] : [];
+    const pos = arr.indexOf(optIdx);
+    if (pos >= 0) arr.splice(pos, 1);
+    else arr.push(optIdx);
+    arr.sort((a, b) => a - b);
+    ts.answers[qIdx] = arr;
+  }
+  renderTrainerQuestion(qIdx);
+}
+
+function trainerConfirm() {
+  const ts = trainerState;
+  const idx = ts.currentQ;
+  if (ts.confirmed[idx]) return;
+
+  const q = ts.batchQuestions[idx];
+  const userAns = ts.answers[idx];
+  if (userAns === undefined || (Array.isArray(userAns) && userAns.length === 0)) return;
+
+  ts.confirmed[idx] = true;
+
+  const correctArr = Array.isArray(q.answer) ? q.answer : [q.answer];
+  const userArr = Array.isArray(userAns) ? userAns : [userAns];
+  const isCorrect =
+    correctArr.length === userArr.length &&
+    correctArr.every(v => userArr.includes(v));
+
+  if (isCorrect) ts.correct++;
+  else ts.wrong++;
+
+  // 记录掌握度
+  recordAttempt(q.id, isCorrect);
+
+  // 显示反馈
+  const feedback = document.getElementById('te-q-feedback');
+  feedback.classList.remove('hide');
+  if (isCorrect) {
+    feedback.style.background = '#f0fdf4';
+    feedback.style.color = '#16a34a';
+    feedback.innerHTML = '✅ <strong>回答正确！</strong>';
+    if (q.explain) feedback.innerHTML += '<br>' + q.explain;
+  } else {
+    feedback.style.background = '#fef2f2';
+    feedback.style.color = '#dc2626';
+    const correctText = correctArr.map(i => q.options[i]).join('、');
+    feedback.innerHTML = `❌ <strong>回答错误</strong><br>正确答案：<strong>${correctText}</strong>`;
+    if (q.explain) feedback.innerHTML += '<br>' + q.explain;
+  }
+
+  renderTrainerQuestion(idx);
+}
+
+function trainerNext() {
+  const ts = trainerState;
+  const next = ts.currentQ + 1;
+  if (next >= ts.batchQuestions.length) {
+    showTrainerBatchResult();
+    return;
+  }
+  ts.currentQ = next;
+  renderTrainerQuestion(next);
+}
+
+function showTrainerBatchResult() {
+  const ts = trainerState;
+  const total = ts.batchQuestions.length;
+  const correct = ts.correct;
+  const wrong = ts.wrong;
+  const score = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+  // 如果完成了主批（非巩固模式），标记批次完成
+  if (ts.mode === 'practice') {
+    markBatchComplete(ts.batchIdx, ts.batchSize, correct, wrong);
+  }
+
+  hideAllPages();
+  document.getElementById('page-trainer-result').classList.remove('hide');
+
+  const container = document.getElementById('te-result-content');
+  const icon = score >= 90 ? '🏆' : score >= 70 ? '🎉' : '👍';
+
+  let html = `
+    <div style="text-align:center">
+      <div style="font-size:48px">${icon}</div>
+      <div style="font-size:36px;font-weight:800;color:#4f6ef7;margin:10px 0">${score}</div>
+      <div style="font-size:14px;color:#666">分</div>
+    </div>
+    <div class="result-stats" style="margin:20px 0">
+      <div class="stat"><div class="num correct">${correct}</div><div class="lbl">✅ 正确</div></div>
+      <div class="stat"><div class="num wrong">${wrong}</div><div class="lbl">❌ 错误</div></div>
+    </div>
+  `;
+
+  // 错题回顾
+  const wrongQuestions = ts.batchQuestions.filter((q, i) => {
+    if (!ts.confirmed[i]) return false;
+    const cArr = Array.isArray(q.answer) ? q.answer : [q.answer];
+    const uArr = Array.isArray(ts.answers[i]) ? ts.answers[i] : [ts.answers[i]];
+    return !(cArr.length === uArr.length && cArr.every(v => uArr.includes(v)));
+  });
+
+  if (wrongQuestions.length > 0) {
+    html += '<h3 style="margin:16px 0 10px">❌ 错题回顾</h3>';
+    wrongQuestions.forEach(q => {
+      const tag = q.type === 'single' ? '单选题' : '多选题';
+      const correctText = (Array.isArray(q.answer) ? q.answer : [q.answer]).map(j => q.options[j]).join('、');
+      html += `
+        <div class="q-review">
+          <div class="review-q">❌ ${tag}：${q.q}</div>
+          <div class="review-answer">
+            <span class="label">正确答案：</span>
+            <span class="val correct-text">${correctText}</span>
+          </div>
+          ${q.explain ? `<div class="review-answer"><span class="label">解析：</span><span style="color:#666">${q.explain}</span></div>` : ''}
+        </div>
+      `;
+    });
+
+    // 如果有错题，提供巩固按钮
+    html += `<button class="btn btn-primary" onclick="retryTrainerWrong()" style="margin-top:10px">🔄 重做本批错题</button>`;
+  } else {
+    html += '<div style="text-align:center;padding:16px;color:#22c55e;font-size:16px;font-weight:600">🎉 全对！完美！</div>';
+  }
+
+  container.innerHTML = html;
+
+  // 如果全部批次已完成，刷新训练首页进度
+  setTimeout(() => renderTrainerHome(), 100);
+}
+
+function retryTrainerWrong() {
+  const ts = trainerState;
+  const wrong = ts.batchQuestions.filter((q, i) => {
+    if (!ts.confirmed[i]) return false;
+    const cArr = Array.isArray(q.answer) ? q.answer : [q.answer];
+    const uArr = Array.isArray(ts.answers[i]) ? ts.answers[i] : [ts.answers[i]];
+    return !(cArr.length === uArr.length && cArr.every(v => uArr.includes(v)));
+  });
+
+  if (wrong.length === 0) {
+    alert('🎉 没有错题！');
+    return;
+  }
+
+  trainerState.batchQuestions = wrong;
+  trainerState.currentQ = 0;
+  trainerState.answers = {};
+  trainerState.confirmed = {};
+  trainerState.correct = 0;
+  trainerState.wrong = 0;
+  trainerState.mode = 'review';
+
+  hideAllPages();
+  document.getElementById('page-trainer-exam').classList.remove('hide');
+  renderTrainerQuestion(0);
+}
+
+// --- 工具函数 ---
+function hideAllPages() {
+  ['page-home', 'page-exam', 'page-result', 'page-wrongbook', 'page-records',
+   'page-trainer', 'page-trainer-exam', 'page-trainer-result'].forEach(id => {
+    document.getElementById(id).classList.add('hide');
+  });
+}
+
+// 修改 showHome 使其兼容训练模式
+const _origShowHome = showHome;
+showHome = function() {
+  _origShowHome();
+  if (getTrainerUnlocked()) {
+    document.getElementById('btn-trainer-entrance').classList.remove('hide');
+  }
+};
+
+// 修改 showWrongBook 使其兼容 page 隐藏
+const _origShowWrongBook = showWrongBook;
+showWrongBook = function() {
+  hideAllPages();
+  document.getElementById('page-wrongbook').classList.remove('hide');
+  const wrongIds = getWrongIds();
+  const container = document.getElementById('wrong-list');
+  container.innerHTML = '';
+  if (wrongIds.length === 0) {
+    container.innerHTML = '<div class="wi-empty">🎉 没有错题，继续保持！</div>';
+    return;
+  }
+  const wrongQuestions = QUESTION_BANK.filter(q => wrongIds.includes(q.id));
+  wrongQuestions.forEach(q => {
+    const div = document.createElement('div');
+    div.className = 'wrong-item';
+    const tag = q.type === 'single' ? '单选题' : '多选题';
+    const correctText = (Array.isArray(q.answer) ? q.answer : [q.answer]).map(j => q.options[j]).join('、');
+    div.innerHTML = `
+      <div class="wi-q">${tag}：${q.q}</div>
+      <div class="wi-info"><span class="wi-label">正确答案：</span>${correctText}</div>
+      ${q.explain ? `<div class="wi-info" style="margin-top:4px"><span class="wi-label">解析：</span>${q.explain}</div>` : ''}
+      <button class="btn btn-secondary" style="margin-top:10px;padding:8px;font-size:13px;width:auto;display:inline-block"
+        onclick="removeWrongIds([${q.id}]); showWrongBook();">删除此题</button>
+    `;
+    container.appendChild(div);
+  });
+  container.innerHTML += `
+    <button class="btn btn-danger" style="margin-top:10px" onclick="
+      if(confirm('确定清空所有错题？')) { saveWrongIds([]); showWrongBook(); updateWrongBtn(); }
+    ">🗑️ 清空错题本</button>
+  `;
+  updateWrongBtn();
+};
+
 // 初始化
 updateWrongBtn();
+// 如果已经解锁，显示训练模式入口
+if (getTrainerUnlocked()) {
+  document.getElementById('btn-trainer-entrance').classList.remove('hide');
+}
 </script>
 
 
