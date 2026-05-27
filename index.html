@@ -132,6 +132,24 @@
     margin-top: 8px;
   }
   .btn-trainer:active { opacity: 0.9; }
+  .btn-mock-exam {
+    background: linear-gradient(135deg, #ec4899, #8b5cf6);
+    color: #fff;
+    margin-top: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-mock-exam::after {
+    content: '共100题';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 11px;
+    opacity: 0.7;
+    font-weight: 400;
+  }
+  .btn-mock-exam:active { opacity: 0.9; }
   .header p { font-size: 14px; color: #666; margin-top: 6px; }
   .card {
     background: #fff;
@@ -429,6 +447,7 @@
       </div>
     </div>
     <button class="btn btn-primary" onclick="startExam()">🚀 开始考试</button>
+    <button class="btn btn-mock-exam" onclick="startMockExam()"><span style="font-size:13px;font-weight:400;opacity:0.7;margin-right:4px">📝</span> 模拟考试 <span style="font-size:12px;font-weight:400;opacity:0.6">(单选70+多选30)</span></button>
     <button class="btn btn-secondary" onclick="showWrongBook()" id="btn-wrong-book">📖 错题本 (8)</button>
     <button class="btn btn-secondary" onclick="promptExamRecords()" id="btn-records" style="margin-top:8px">🔐 管理面板</button>
   <button class="btn btn-trainer hide" id="btn-trainer-entrance" onclick="showTrainerHome()">🎯 训练模式</button>
@@ -3910,7 +3929,11 @@ let state = {
   timePerQ: 0,
   timeLeft: 0,
   isSubmitted: false,
-  wrongMode: false
+  wrongMode: false,
+  isMockExam: false,     // 模拟考试模式
+  totalTimeLeft: 0,      // 模拟考试总倒计时（秒）
+  singleCount: 0,        // 模拟考试中单选题数
+  multiCount: 0          // 模拟考试中多选题数
 };
 
 // 错题存储 (localStorage)
@@ -3948,6 +3971,8 @@ function showHome() {
   document.getElementById('page-result').classList.add('hide');
   document.getElementById('page-wrongbook').classList.add('hide');
   document.getElementById('page-records').classList.add('hide');
+  state.isMockExam = false;
+  state.totalTimeLeft = 0;
   clearTimer();
   updateWrongBtn();
 }
@@ -3990,6 +4015,46 @@ function startExam() {
   state.timePerQ = timePerQ;
   state.isSubmitted = false;
   state.wrongMode = wrongMode;
+  state.isMockExam = false;
+  state.totalTimeLeft = 0;
+
+  document.getElementById('page-home').classList.add('hide');
+  document.getElementById('page-exam').classList.remove('hide');
+  document.getElementById('page-result').classList.add('hide');
+
+  renderQuestion(0);
+}
+
+// ============================================================
+// 模拟考试（单选70 + 多选30）
+// ============================================================
+function startMockExam() {
+  const singles = QUESTION_BANK.filter(q => q.type === 'single');
+  const multis = QUESTION_BANK.filter(q => q.type === 'multi');
+
+  const pickCounts = { single: Math.min(70, singles.length), multi: Math.min(30, multis.length) };
+
+  // 随机打乱后抽取
+  const shuffledSingle = singles.sort(() => Math.random() - 0.5).slice(0, pickCounts.single);
+  const shuffledMulti = multis.sort(() => Math.random() - 0.5).slice(0, pickCounts.multi);
+
+  // 合并并打乱
+  const selected = [...shuffledSingle, ...shuffledMulti].sort(() => Math.random() - 0.5);
+
+  state.questions = selected;
+  state.currentQ = 0;
+  state.answers = {};
+  state.confirmed = {};
+  state.correctCount = 0;
+  state.wrongCount = 0;
+  state.emptyCount = 0;
+  state.timePerQ = 0;
+  state.isSubmitted = false;
+  state.wrongMode = false;
+  state.isMockExam = true;
+  state.totalTimeLeft = 90 * 60; // 90 分钟
+  state.singleCount = shuffledSingle.length;
+  state.multiCount = shuffledMulti.length;
 
   document.getElementById('page-home').classList.add('hide');
   document.getElementById('page-exam').classList.remove('hide');
@@ -4006,7 +4071,10 @@ function renderQuestion(index) {
   if (!q) return;
 
   const total = state.questions.length;
-  document.getElementById('q-number').textContent = `第 ${index + 1} 题`;
+  document.getElementById('student-badge').textContent = state.isMockExam ? '📝 模拟考试' : '';
+  document.getElementById('q-number').textContent = state.isMockExam
+    ? `模拟考试 · 第 ${index + 1} 题`
+    : `第 ${index + 1} 题`;
   document.getElementById('q-progress').textContent = `第 ${index + 1}/${total} 题`;
   document.getElementById('progress-fill').style.width = `${(index / total) * 100}%`;
 
@@ -4036,7 +4104,8 @@ function renderQuestion(index) {
     if (state.confirmed[index]) {
       li.style.cursor = 'default';
       li.onclick = null;
-      const userAns = state.answers[index] || [];
+      const raw = state.answers[index];
+      const userAns = raw !== undefined && raw !== null ? raw : [];
       const userArr = Array.isArray(userAns) ? userAns : [userAns];
       const correctArr = Array.isArray(q.answer) ? q.answer : [q.answer];
       if (userArr.includes(oi)) {
@@ -4084,7 +4153,27 @@ function renderQuestion(index) {
 
   // 计时器
   clearTimer();
-  if (state.timePerQ > 0 && !state.confirmed[index]) {
+  if (state.isMockExam && !state.confirmed[index] && state.totalTimeLeft > 0) {
+    // 模拟考试：总倒计时
+    updateTimerDisplay();
+    state.timerId = setInterval(() => {
+      state.totalTimeLeft--;
+      updateTimerDisplay();
+      if (state.totalTimeLeft <= 0) {
+        clearTimer();
+        // 超时自动交卷
+        // 所有未确认的题标记为未答
+        state.questions.forEach((_, i) => {
+          if (!state.confirmed[i]) {
+            state.confirmed[i] = true;
+            state.emptyCount++;
+            if (!state.answers[i]) state.answers[i] = [];
+          }
+        });
+        showResult();
+      }
+    }, 1000);
+  } else if (state.timePerQ > 0 && !state.confirmed[index]) {
     state.timeLeft = state.timePerQ;
     updateTimerDisplay();
     state.timerId = setInterval(() => {
@@ -4219,6 +4308,16 @@ function clearTimer() {
 }
 function updateTimerDisplay() {
   const el = document.getElementById('timer');
+  if (state.isMockExam) {
+    if (state.totalTimeLeft <= 0) { el.textContent = '00:00'; return; }
+    const m = Math.floor(state.totalTimeLeft / 60);
+    const s = state.totalTimeLeft % 60;
+    el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    el.className = 'timer';
+    if (state.totalTimeLeft <= 60) el.classList.add('danger');
+    else if (state.totalTimeLeft <= 300) el.classList.add('warning');
+    return;
+  }
   if (state.timePerQ <= 0) { el.textContent = '--:--'; return; }
   const m = Math.floor(state.timeLeft / 60);
   const s = state.timeLeft % 60;
@@ -4244,7 +4343,9 @@ function showResult() {
   const score = total > 0 ? Math.round((correct / total) * 100) : 0;
 
   document.getElementById('result-score').textContent = score;
-  document.getElementById('result-student-info').textContent = state.studentName + ' - ' + state.studentId;
+  document.getElementById('result-student-info').textContent = state.isMockExam
+    ? '📝 模拟考试 · ' + state.singleCount + '单选 + ' + state.multiCount + '多选'
+    : state.studentName + ' - ' + state.studentId;
   document.getElementById('r-correct').textContent = correct;
   document.getElementById('r-wrong').textContent = wrong;
   document.getElementById('r-empty').textContent = empty;
@@ -4409,6 +4510,8 @@ function retryWrong() {
   state.timePerQ = parseInt(document.getElementById('exam-time-per-q').value);
   state.isSubmitted = false;
   state.wrongMode = true;
+  state.isMockExam = false;
+  state.totalTimeLeft = 0;
 
   document.getElementById('page-result').classList.add('hide');
   document.getElementById('page-home').classList.add('hide');
