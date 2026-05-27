@@ -4122,7 +4122,7 @@ function renderQuestion(index) {
       if (userAns !== undefined) {
         const arr = Array.isArray(userAns) ? userAns : [userAns];
         if (arr.includes(oi)) {
-          li.classList.add('selected');
+          if (!state.isMockExam) li.classList.add('selected');
           cb.textContent = q.type === 'multi' ? '■' : '●';
         }
       }
