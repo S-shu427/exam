@@ -4100,20 +4100,16 @@ function renderQuestion(index) {
     li.appendChild(cb);
     li.appendChild(span);
 
-    // 如果已经确认过，显示结果
+    // 如果已经确认过，只显示选中标记，不显示正确/错误
     if (state.confirmed[index]) {
       li.style.cursor = 'default';
       li.onclick = null;
       const raw = state.answers[index];
       const userAns = raw !== undefined && raw !== null ? raw : [];
       const userArr = Array.isArray(userAns) ? userAns : [userAns];
-      const correctArr = Array.isArray(q.answer) ? q.answer : [q.answer];
       if (userArr.includes(oi)) {
-        li.classList.add(correctArr.includes(oi) ? 'correct' : 'wrong');
-        cb.textContent = correctArr.includes(oi) ? '✓' : '✗';
-      } else if (correctArr.includes(oi) && q.type === 'multi') {
-        li.classList.add('missed');
-        cb.textContent = '○';
+        li.classList.add('selected');
+        cb.textContent = '✓';
       }
     } else {
       // 选择模式
@@ -4234,29 +4230,6 @@ function confirmAnswer() {
   if (isCorrect) state.correctCount++;
   else state.wrongCount++;
 
-  if (state.isMockExam) {
-    // 模拟考试：确认后直接跳下一题，不显示答案
-    if (!isCorrect) addWrongIds([q.id]);
-    nextQuestion();
-    return;
-  }
-
-  // 显示反馈
-  const feedback = document.getElementById('q-feedback');
-  feedback.classList.remove('hide');
-  if (isCorrect) {
-    feedback.style.background = '#f0fdf4';
-    feedback.style.color = '#16a34a';
-    feedback.innerHTML = '✅ <strong>回答正确！</strong>';
-    if (q.explain) feedback.innerHTML += '<br>' + q.explain;
-  } else {
-    feedback.style.background = '#fef2f2';
-    feedback.style.color = '#dc2626';
-    const correctText = correctArr.map(i => q.options[i]).join('、');
-    feedback.innerHTML = `❌ <strong>回答错误</strong><br>正确答案：<strong>${correctText}</strong>`;
-    if (q.explain) feedback.innerHTML += '<br>' + q.explain;
-  }
-
   // 不正确的题记录错题
   const allWrongIds = state.questions
     .filter((_, i) => {
@@ -4268,7 +4241,7 @@ function confirmAnswer() {
     .map(q => q.id);
   addWrongIds(allWrongIds);
 
-  renderQuestion(idx);
+  nextQuestion();
 }
 
 function autoAdvance(idx) {
@@ -4279,19 +4252,10 @@ function autoAdvance(idx) {
   state.emptyCount++;
   state.wrongCount++;
 
-  const feedback = document.getElementById('q-feedback');
-  feedback.classList.remove('hide');
-  feedback.style.background = '#fffbeb';
-  feedback.style.color = '#d97706';
-  const correctArr = Array.isArray(q.answer) ? q.answer : [q.answer];
-  const correctText = correctArr.map(i => q.options[i]).join('、');
-  feedback.innerHTML = `⏰ <strong>超时未答</strong><br>正确答案：<strong>${correctText}</strong>`;
-  if (q.explain) feedback.innerHTML += '<br>' + q.explain;
-
   // 记录错题
   addWrongIds([q.id]);
 
-  renderQuestion(idx);
+  nextQuestion();
 }
 
 function nextQuestion() {
