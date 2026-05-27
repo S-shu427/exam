@@ -4234,6 +4234,13 @@ function confirmAnswer() {
   if (isCorrect) state.correctCount++;
   else state.wrongCount++;
 
+  if (state.isMockExam) {
+    // 模拟考试：确认后直接跳下一题，不显示答案
+    if (!isCorrect) addWrongIds([q.id]);
+    nextQuestion();
+    return;
+  }
+
   // 显示反馈
   const feedback = document.getElementById('q-feedback');
   feedback.classList.remove('hide');
