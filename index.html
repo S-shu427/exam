@@ -281,8 +281,8 @@
     transition: all 0.15s;
   }
   .option-item.multi .checkbox { border-radius: 4px; }
-  .option-item.selected { border-color: #4f6ef7; background: #eef2ff; }
-  .option-item.selected .checkbox { background: #4f6ef7; border-color: #4f6ef7; }
+  .option-item.selected { }
+  .option-item.selected .checkbox { background: #4f6ef7; border-color: #4f6ef7; color: #fff; }
   .option-item.correct {
     border-color: #22c55e; background: #f0fdf4;
   }
@@ -4122,8 +4122,8 @@ function renderQuestion(index) {
       if (userAns !== undefined) {
         const arr = Array.isArray(userAns) ? userAns : [userAns];
         if (arr.includes(oi)) {
-          if (!state.isMockExam) li.classList.add('selected');
-          cb.textContent = q.type === 'multi' ? '■' : '●';
+          li.classList.add('selected');
+          cb.textContent = '✓';
         }
       }
     }
@@ -4851,7 +4851,7 @@ function renderTrainerQuestion(index) {
         const arr = Array.isArray(userAns) ? userAns : [userAns];
         if (arr.includes(oi)) {
           li.classList.add('selected');
-          cb.textContent = q.type === 'multi' ? '■' : '●';
+          cb.textContent = '✓';
         }
       }
     }
